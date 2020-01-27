@@ -33,8 +33,9 @@ for d in data:
   d['winrate'] = 0.5
   d['visits'] = 0
 
-def choose(key):
+def choose(key, excludes):
   candidates = index[key]
+  canditates = set(candidates) - set(excludes)
   if candidates == []:
     return 0
   winrates = np.array([c['winrate'] for c in candidates])
@@ -48,10 +49,11 @@ def play():
   sequence = []
   p = start
   while True:
-    idiom = choose(p)
+    idiom = choose(p, sequence)
     if idiom == 0:
       break
     sequence.append(idiom)
     print(idiom['word'])
+    p = idiom['last']
   return sequence
   
