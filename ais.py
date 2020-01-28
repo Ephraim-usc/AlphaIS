@@ -90,6 +90,9 @@ def train(player, n):
     learn(player, s)
     print(i)
 
+def refresh(player):
+  player['visits'] = {p:2 for p in pinyins}
+
 ### play
 def play(player1, player2):
   start = np.random.choice(lasts, 1)[0]
