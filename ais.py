@@ -100,12 +100,12 @@ def play(player1, player2):
     if i == -1:
       return 0
     p = lasts[i]
-    print("player 1 gives: " + str(words[i]) + " current win rate: " + str(player1['winrate'][p]))
+    print("Black gives: " + str(words[i]) + " current win rate: " + str(player1['winrate'][p]))
     i = choose_match(p, player2)
     if i == -1:
       return 1
     p = lasts[i]
-    print("player 2 gives: " + str(words[i]) + " current win rate: " + str(player2['winrate'][p]))
+    print("White gives: " + str(words[i]) + " current win rate: " + str(player2['winrate'][p]))
   return -1
 
 def play_(player1, player2):
