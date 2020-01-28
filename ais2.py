@@ -31,8 +31,7 @@ def choose_train(key, player, excludes = []):
   if candidates == []:
     return -1
   winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
-  visits = np.array([player['visits'][lasts[i]] for i in canditates])
-  weights = np.power(winrates, 2) / (1 + visits)
+  weights = np.power(winrates, 2)
   weights = weights / weights.sum()
   decision = np.random.choice(candidates, 1, p = weights)[0]
   return decision
@@ -43,14 +42,14 @@ def choose_match(key, player, excludes = []):
   if candidates == []:
     return -1
   winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
-  weights = np.power(winrates, 3)
+  weights = winrates == winrates.max()
   weights = weights / weights.sum()
   decision = np.random.choice(candidates, 1, p = weights)[0]
   return decision
 
 ### initialize a player
 def new_player():
-  buffer = {'winrate': {p:0.5 for p in pinyins}, 'visits': {p:2 for p in pinyins}}
+  buffer = {'winrate': {p:0.5 for p in pinyins}}
   return buffer
 
 ### play
@@ -76,22 +75,17 @@ def learn(player, sequence):
   
   for i in wins:
     p = lasts[i]
-    player['winrate'][p] = (player['winrate'][p] * player['visits'][p] + 1) / (player['visits'][p] + 1)
-    player['visits'][p] += 1
+    player['winrate'][p] = (player['winrate'][p] * 9 + 1) / 10
   
   for i in loses:
     p = lasts[i]
-    player['winrate'][p] = (player['winrate'][p] * player['visits'][p]) / (player['visits'][p] + 1)
-    player['visits'][p] += 1
+    player['winrate'][p] = (player['winrate'][p] * 9) / 10
 
 def train(player, n):
   for i in range(n):
     s = self_play(player)
     learn(player, s)
     print(i)
-
-def refresh(player):
-  player['visits'] = {p:2 for p in pinyins}
 
 ### play
 def play(player1, player2):
@@ -130,3 +124,33 @@ def compare(player1, player2, n):
   for i in range(n):
     score += play_(player1, player2)
   return score/n
+
+### human 
+
+def new_strong_player():
+  player = {'winrate': {p:0.5 for p in pinyins}}
+  wins = set()
+  loses = set()
+  
+  for p in pinyins:
+    if index[p] == []:
+      wins.add(p)
+  
+  for q in range(3):
+    buffer = [back_index[p] for p in wins]
+    buffer = [i for sublist in buffer for i in sublist]
+    buffer = set([lasts[i] for i in buffer])
+    buffer = pinyins - wins - loses
+    loses = loses.union(buffer)
+    
+    buffer = [back_index[p] for p in loses]
+    buffer = [i for sublist in buffer for i in sublist]
+    buffer = set([lasts[i] for i in buffer])
+    buffer = pinyins - wins - loses
+    wins = wins.union(buffer)
+  
+  for p in wins:
+    player['winrate'][p] = 1
+  for p in loses:
+    player['winrate'][p] = 0
+  return player
