@@ -27,24 +27,24 @@ for pinyin in pinyins:
 
 def choose_train(key, player, excludes = []):
   candidates = index[key]
-  canditates = set(candidates) - set(excludes)
-  if candidates == []:
+  candidates = set(candidates) - set(excludes)
+  if candidates == set():
     return -1
-  winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
-  weights = np.power(winrates, 2)
+  winrates = np.array([player['winrate'][lasts[i]] for i in candidates])
+  weights = np.power(winrates, 2) + 0.001
   weights = weights / weights.sum()
-  decision = np.random.choice(candidates, 1, p = weights)[0]
+  decision = np.random.choice(list(candidates), 1, p = weights)[0]
   return decision
 
 def choose_match(key, player, excludes = []):
   candidates = index[key]
-  canditates = set(candidates) - set(excludes)
-  if candidates == []:
+  candidates = set(candidates) - set(excludes)
+  if candidates == set():
     return -1
-  winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
+  winrates = np.array([player['winrate'][lasts[i]] for i in candidates])
   weights = winrates == winrates.max()
   weights = weights / weights.sum()
-  decision = np.random.choice(candidates, 1, p = weights)[0]
+  decision = np.random.choice(list(candidates), 1, p = weights)[0]
   return decision
 
 ### initialize a player
@@ -88,41 +88,36 @@ def train(player, n):
     print(i)
 
 ### play
-def play(player1, player2):
-  start = np.random.choice(lasts, 1)[0]
-  p = start
-  print("start pinyin: " + str(p))
+def play(player1, player2, verbose = True):
   while True:
-    i = choose_match(p, player1)
+    start = np.random.choice(lasts, 1)[0]
+    if index[start] != []:
+      break
+  p = start
+  history = set()
+  if verbose: print("start pinyin: " + str(p))
+  while True:
+    i = choose_match(p, player1, history)
     if i == -1:
       return 0
     p = lasts[i]
-    print("Black gives: " + str(words[i]) + " current win rate: " + str(player1['winrate'][p]))
-    i = choose_match(p, player2)
+    history.add(i)
+    if verbose: print("Black gives: " + str(words[i]) + " last: " + str(p) +
+                      " Win rate: " + str(player1['winrate'][p]))
+    i = choose_match(p, player2, history)
     if i == -1:
       return 1
     p = lasts[i]
-    print("White gives: " + str(words[i]) + " current win rate: " + str(player2['winrate'][p]))
+    history.add(i)
+    if verbose: print("White gives: " + str(words[i]) + " last: " + str(p) +
+                      " Win rate: " + str(player2['winrate'][p]))
   return -1
 
-def play_(player1, player2):
-  start = np.random.choice(lasts, 1)[0]
-  p = start
-  while True:
-    i = choose_match(p, player1)
-    if i == -1:
-      return 0
-    p = lasts[i]
-    i = choose_match(p, player2)
-    if i == -1:
-      return 1
-    p = lasts[i]
-  return -1
 
-def compare(player1, player2, n):
+def compare(player1, player2, n = 100):
   score = 0
   for i in range(n):
-    score += play_(player1, player2)
+    score += play(player1, player2, verbose = False)
   return score/n
 
 ### human 
@@ -131,23 +126,25 @@ def new_strong_player():
   player = {'winrate': {p:0.5 for p in pinyins}}
   wins = set()
   loses = set()
+  index_ = index.copy()
+  back_index_ = back_index.copy()
   
-  for p in pinyins:
-    if index[p] == []:
-      wins.add(p)
-  
-  for q in range(3):
-    buffer = [back_index[p] for p in wins]
-    buffer = [i for sublist in buffer for i in sublist]
-    buffer = set([lasts[i] for i in buffer])
-    buffer = pinyins - wins - loses
-    loses = loses.union(buffer)
+  for i in range(3):
+    for p in pinyins:
+      if index_[p] == []:
+        wins.add(p)
     
-    buffer = [back_index[p] for p in loses]
-    buffer = [i for sublist in buffer for i in sublist]
-    buffer = set([lasts[i] for i in buffer])
-    buffer = pinyins - wins - loses
-    wins = wins.union(buffer)
+    for q in range(20):
+      buffer = [back_index_[p] for p in wins]
+      buffer = [i for sublist in buffer for i in sublist]
+      buffer = set([firsts[i] for i in buffer])
+      buffer = buffer - wins - loses
+      loses = loses.union(buffer)
+      
+    for p in pinyins:
+      for i in index_[p]:
+        if lasts[i] in loses:
+          index_[p].remove(i)
   
   for p in wins:
     player['winrate'][p] = 1
