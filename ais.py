@@ -25,14 +25,26 @@ for pinyin in pinyins:
     if lasts[i] == pinyin:
       back_index[pinyin].append(i)
 
-def choose(key, player, excludes = []):
+def choose_train(key, player, excludes = []):
   candidates = index[key]
   canditates = set(candidates) - set(excludes)
   if candidates == []:
     return -1
   winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
   visits = np.array([player['visits'][lasts[i]] for i in canditates])
-  weights = winrates / (1 + visits); weights = np.power(weights, 2); weights = weights / weights.sum()
+  weights = np.power(winrates, 2) / (1 + visits)
+  weights = weights / weights.sum()
+  decision = np.random.choice(candidates, 1, p = weights)[0]
+  return decision
+
+def choose_match(key, player, excludes = []):
+  candidates = index[key]
+  canditates = set(candidates) - set(excludes)
+  if candidates == []:
+    return -1
+  winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
+  weights = np.power(winrates, 3)
+  weights = weights / weights.sum()
   decision = np.random.choice(candidates, 1, p = weights)[0]
   return decision
 
@@ -47,7 +59,7 @@ def self_play(player):
   sequence = []
   p = start
   while True:
-    i = choose(p, player)
+    i = choose_train(p, player)
     if i == -1:
       break
     sequence.append(i)
@@ -84,12 +96,12 @@ def play(player1, player2):
   p = start
   print("start pinyin: " + str(p))
   while True:
-    i = choose(p, player1)
+    i = choose_match(p, player1)
     if i == -1:
       return 0
     p = lasts[i]
     print("player 1 gives: " + str(words[i]) + " current win rate: " + str(player1['winrate'][p]))
-    i = choose(p, player2)
+    i = choose_match(p, player2)
     if i == -1:
       return 1
     p = lasts[i]
@@ -100,11 +112,11 @@ def play_(player1, player2):
   start = np.random.choice(lasts, 1)[0]
   p = start
   while True:
-    i = choose(p, player1)
+    i = choose_match(p, player1)
     if i == -1:
       return 0
     p = lasts[i]
-    i = choose(p, player2)
+    i = choose_match(p, player2)
     if i == -1:
       return 1
     p = lasts[i]
