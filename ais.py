@@ -32,7 +32,7 @@ def choose(key, player, excludes = []):
     return -1
   winrates = np.array([player['winrate'][lasts[i]] for i in canditates])
   visits = np.array([player['visits'][lasts[i]] for i in canditates])
-  weights = winrates / (1 + visits); weights = weights / weights.sum()
+  weights = winrates / (1 + visits); weights = np.power(weights, 2); weights = weights / weights.sum()
   decision = np.random.choice(candidates, 1, p = weights)[0]
   return decision
 
@@ -81,23 +81,37 @@ def train(player, n):
 ### play
 def play(player1, player2):
   start = np.random.choice(lasts, 1)[0]
-  sequence = []
   p = start
   print("start pinyin: " + str(p))
   while True:
     i = choose(p, player1)
     if i == -1:
-      break
-    sequence.append(i)
+      return 0
     p = lasts[i]
-    print("player 1 gives: " + str(words[i]))
-    print("player 1 current win rate: " + str(player1['winrate'][p]))
+    print("player 1 gives: " + str(words[i]) + " current win rate: " + str(player1['winrate'][p]))
     i = choose(p, player2)
     if i == -1:
-      break
-    sequence.append(i)
+      return 1
     p = lasts[i]
-    print("player 2 gives: " + str(words[i]))
-    print("player 2 current win rate: " + str(player2['winrate'][p]))
-  return sequence
+    print("player 2 gives: " + str(words[i]) + " current win rate: " + str(player2['winrate'][p]))
+  return -1
 
+def play_(player1, player2):
+  start = np.random.choice(lasts, 1)[0]
+  p = start
+  while True:
+    i = choose(p, player1)
+    if i == -1:
+      return 0
+    p = lasts[i]
+    i = choose(p, player2)
+    if i == -1:
+      return 1
+    p = lasts[i]
+  return -1
+
+def compare(player1, player2, n):
+  score = 0
+  for i in range(n):
+    score += play_(player1, player2)
+  return score/n
